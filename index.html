@@ -30,8 +30,16 @@
             color: white;
             padding: 25px;
             border-radius: 12px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .filter-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 15px 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid #0d6efd;
         }
         .card {
             border: none;
@@ -113,18 +121,28 @@
             </button>
         </div>
 
+        <!-- Filter Section -->
+        <div class="filter-card d-flex align-items-center gap-3">
+            <h5 class="mb-0 fw-bold text-primary">📅 เลือกปีงบประมาณ:</h5>
+            <select id="yearFilter" class="form-select form-select-lg fw-bold" style="max-width: 350px;" onchange="updateView()">
+                <option value="year3" selected>ปีงบประมาณ 2569 (ตค 68 - กย 69)</option>
+                <option value="year2">ปีงบประมาณ 2568 (ตค 67 - กย 68)</option>
+                <option value="year1">ปีงบประมาณ 2567 (ตค 66 - กย 67)</option>
+            </select>
+        </div>
+
         <!-- KPI Cards -->
         <div class="row g-4 mb-4">
             <div class="col-md-4">
                 <div class="kpi-box" style="border-color: #0d6efd;">
-                    <div class="kpi-title">ผู้ป่วยรวมล่าสุด (ตค 68-กย 69)</div>
-                    <div class="kpi-value text-primary" id="kpi-year3">0</div>
+                    <div class="kpi-title" id="kpi-year-label">ผู้ป่วยรวมล่าสุด</div>
+                    <div class="kpi-value text-primary" id="kpi-total-val">0</div>
                     <div class="kpi-sub" id="kpi-growth">เทียบกับปีที่ผ่านมา</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="kpi-box" style="border-color: #dc3545;">
-                    <div class="kpi-title">โรคอันดับ 1 (ปีล่าสุด)</div>
+                    <div class="kpi-title">โรคอันดับ 1 ที่พบมากที่สุด</div>
                     <div class="kpi-value text-danger" style="font-size: 1.8rem; line-height: 1.2;" id="kpi-top-name">-</div>
                     <div class="kpi-sub mt-2" id="kpi-top-icd">รหัส ICD-10</div>
                 </div>
@@ -144,7 +162,7 @@
             <div class="col-lg-7">
                 <div class="card h-100" id="card-top10">
                     <div class="card-header">
-                        <span>📊 10 อันดับโรคที่พบมากที่สุด (ตค 68-กย 69)</span>
+                        <span id="top10-title">📊 10 อันดับโรคที่พบมากที่สุด</span>
                         <button class="btn btn-outline-primary btn-save" onclick="saveChart('card-top10')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
@@ -173,7 +191,7 @@
             <div class="col-12">
                 <div class="card" id="card-trend">
                     <div class="card-header">
-                        <span>📈 แนวโน้มเปรียบเทียบ 3 ปี (Top 5 โรคสูงสุด)</span>
+                        <span id="trend-title">📈 แนวโน้มเปรียบเทียบ 3 ปี (Top 5 โรคสูงสุดของปีที่เลือก)</span>
                         <button class="btn btn-outline-primary btn-save" onclick="saveChart('card-trend')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
@@ -185,18 +203,16 @@
     </div>
 
     <script>
-        // ตั้งค่า Font ของ Chart.js ให้เป็น Chakra Petch
         Chart.defaults.font.family = "'Chakra Petch', sans-serif";
         Chart.defaults.color = '#34495e';
 
-        // URL ดึงข้อมูล CSV (เชื่อมชีต "สรุป")
         const SHEET_ID = '1xswOes7vFaiKMf2Pb5pcBeFA-Zb0N_ot';
         const GID = '486947397';
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
 
+        let globalData = [];
         let chartTop10, chartGroup, chartTrend;
 
-        // จัดกลุ่มตาม PDF ICD-10 Dual Coding
         function determineGroup(icd) {
             if(!icd) return "อื่นๆ (ไม่ได้ระบุในหมวดหลัก)";
             icd = icd.toUpperCase().trim();
@@ -212,7 +228,6 @@
             return "กลุ่มโรคอื่นๆ";
         }
 
-        // แปลงค่าสตริงตัวเลขที่มีลูกน้ำให้เป็น Number
         function parseNum(val) {
             if(!val) return 0;
             return parseInt(val.toString().replace(/,/g, ''), 10) || 0;
@@ -220,13 +235,12 @@
 
         Papa.parse(CSV_URL, {
             download: true,
-            header: false, // ใช้ false เพื่ออ่านตาม Index ป้องกันปัญหาชื่อคอลัมน์ยาว/ซับซ้อน
+            header: false,
             skipEmptyLines: true,
             complete: function(results) {
-                // ข้ามแถวที่ 0 (Header) และกรองเอาเฉพาะแถวที่มีข้อมูลรหัสโรค
                 const rows = results.data.slice(1).filter(r => r[0] && r[1]);
                 
-                let processedData = rows.map(r => ({
+                globalData = rows.map(r => ({
                     name: r[0].trim(),
                     icd: r[1].trim(),
                     year1: parseNum(r[2]),
@@ -234,10 +248,7 @@
                     year3: parseNum(r[4])
                 }));
 
-                // จัดเรียงตามยอดปีล่าสุด (ปี 68-69)
-                processedData.sort((a, b) => b.year3 - a.year3);
-                
-                buildDashboard(processedData);
+                updateView();
                 document.getElementById('loading').style.display = 'none';
             },
             error: function(err) {
@@ -246,36 +257,55 @@
             }
         });
 
-        function buildDashboard(data) {
-            if(data.length === 0) return;
+        function updateView() {
+            if(globalData.length === 0) return;
 
-            // --- 1. จัดการตัวเลข KPI ---
-            let totalYear2 = data.reduce((sum, d) => sum + d.year2, 0);
-            let totalYear3 = data.reduce((sum, d) => sum + d.year3, 0);
+            const selectedKey = document.getElementById('yearFilter').value;
+            const selectElement = document.getElementById('yearFilter');
+            const selectedText = selectElement.options[selectElement.selectedIndex].text;
             
-            document.getElementById('kpi-year3').innerText = totalYear3.toLocaleString();
+            // เรียงลำดับข้อมูลใหม่ตามปีงบประมาณที่ผู้ใช้เลือก
+            let sortedData = [...globalData].sort((a, b) => b[selectedKey] - a[selectedKey]);
+
+            // --- 1. อัปเดตตัวเลข KPI ---
+            let totalSelected = sortedData.reduce((sum, d) => sum + d[selectedKey], 0);
             
-            let growth = totalYear3 - totalYear2;
+            document.getElementById('kpi-total-val').innerText = totalSelected.toLocaleString();
+            document.getElementById('kpi-year-label').innerText = `ผู้ป่วยรวม (${selectedText.split(' ')[0]})`;
+            document.getElementById('top10-title').innerText = `📊 10 อันดับโรคที่พบมากที่สุด (${selectedText.split(' ')[0]})`;
+
+            // คำนวณการเติบโตเทียบกับปีก่อนหน้า
             let growthEl = document.getElementById('kpi-growth');
-            if (growth > 0) {
-                growthEl.innerHTML = `<span class="text-danger">▲ เพิ่มขึ้น ${growth.toLocaleString()} ราย</span> จากปีก่อน`;
+            if (selectedKey === 'year3') {
+                let prevTotal = sortedData.reduce((sum, d) => sum + d.year2, 0);
+                let diff = totalSelected - prevTotal;
+                growthEl.innerHTML = diff > 0 
+                    ? `<span class="text-danger">▲ เพิ่มขึ้น ${diff.toLocaleString()} ราย</span> จากปีก่อน (ปี 68)` 
+                    : `<span class="text-success">▼ ลดลง ${Math.abs(diff).toLocaleString()} ราย</span> จากปีก่อน (ปี 68)`;
+            } else if (selectedKey === 'year2') {
+                let prevTotal = sortedData.reduce((sum, d) => sum + d.year1, 0);
+                let diff = totalSelected - prevTotal;
+                growthEl.innerHTML = diff > 0 
+                    ? `<span class="text-danger">▲ เพิ่มขึ้น ${diff.toLocaleString()} ราย</span> จากปีก่อน (ปี 67)` 
+                    : `<span class="text-success">▼ ลดลง ${Math.abs(diff).toLocaleString()} ราย</span> จากปีก่อน (ปี 67)`;
             } else {
-                growthEl.innerHTML = `<span class="text-success">▼ ลดลง ${Math.abs(growth).toLocaleString()} ราย</span> จากปีก่อน`;
+                growthEl.innerHTML = `<span class="text-muted">- ไม่มีฐานข้อมูลปี 66 ให้เปรียบเทียบ -</span>`;
             }
 
-            document.getElementById('kpi-top-name').innerText = data[0].name;
-            document.getElementById('kpi-top-icd').innerText = `ICD-10: ${data[0].icd} (${data[0].year3.toLocaleString()} ราย)`;
-            document.getElementById('kpi-disease-count').innerText = data.length.toLocaleString();
+            document.getElementById('kpi-top-name').innerText = sortedData[0].name;
+            document.getElementById('kpi-top-icd').innerText = `ICD-10: ${sortedData[0].icd} (${sortedData[0][selectedKey].toLocaleString()} ราย)`;
+            document.getElementById('kpi-disease-count').innerText = sortedData.filter(d => d[selectedKey] > 0).length.toLocaleString();
 
-            // --- 2. กราฟ Top 10 แนวนอน (ใช้ข้อมูลปีล่าสุด) ---
-            const top10 = data.slice(0, 10);
+            // --- 2. อัปเดตกราฟ Top 10 แนวนอน ---
+            const top10 = sortedData.slice(0, 10);
+            if (chartTop10) chartTop10.destroy();
             chartTop10 = new Chart(document.getElementById('top10Chart'), {
                 type: 'bar',
                 data: {
                     labels: top10.map(d => `${d.icd} ${d.name}`),
                     datasets: [{
                         label: 'จำนวน (ราย)',
-                        data: top10.map(d => d.year3),
+                        data: top10.map(d => d[selectedKey]),
                         backgroundColor: 'rgba(54, 162, 235, 0.8)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1,
@@ -290,14 +320,16 @@
                 }
             });
 
-            // --- 3. กราฟ Donut กลุ่มโรค (จัดกลุ่มตาม PDF) ---
+            // --- 3. อัปเดตกราฟ Donut กลุ่มโรค ---
             let groupSums = {};
-            data.forEach(d => {
-                let group = determineGroup(d.icd);
-                // ใช้ยอดรวม 3 ปี หรือยอดล่าสุดก็ได้ (ในที่นี้ใช้ยอดล่าสุดเพื่อให้สอดคล้องกับ KPI)
-                groupSums[group] = (groupSums[group] || 0) + d.year3;
+            sortedData.forEach(d => {
+                if (d[selectedKey] > 0) {
+                    let group = determineGroup(d.icd);
+                    groupSums[group] = (groupSums[group] || 0) + d[selectedKey];
+                }
             });
             
+            if (chartGroup) chartGroup.destroy();
             chartGroup = new Chart(document.getElementById('groupChart'), {
                 type: 'doughnut',
                 data: {
@@ -321,25 +353,26 @@
                 }
             });
 
-            // --- 4. กราฟ Trend 3 ปี (Top 5 โรค) ---
-            const top5 = data.slice(0, 5);
+            // --- 4. อัปเดตกราฟ Trend 3 ปี (ดึง Top 5 ของปีที่เลือก) ---
+            const top5 = sortedData.slice(0, 5);
+            if (chartTrend) chartTrend.destroy();
             chartTrend = new Chart(document.getElementById('trendChart'), {
                 type: 'bar',
                 data: {
                     labels: top5.map(d => `${d.icd} ${d.name}`),
                     datasets: [
                         {
-                            label: 'ตค 66-กย 67',
+                            label: 'ตค 66-กย 67 (ปีงบ 67)',
                             data: top5.map(d => d.year1),
                             backgroundColor: '#95a5a6'
                         },
                         {
-                            label: 'ตค 67-กย 68',
+                            label: 'ตค 67-กย 68 (ปีงบ 68)',
                             data: top5.map(d => d.year2),
                             backgroundColor: '#f1c40f'
                         },
                         {
-                            label: 'ตค 68-กย 69',
+                            label: 'ตค 68-กย 69 (ปีงบ 69)',
                             data: top5.map(d => d.year3),
                             backgroundColor: '#e74c3c'
                         }
@@ -352,36 +385,35 @@
                         legend: { position: 'top' },
                         tooltip: { mode: 'index', intersect: false }
                     },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    scales: { y: { beginAtZero: true } }
                 }
             });
         }
 
-        // ฟังก์ชันเซฟรูปเฉพาะการ์ด
+        // ฟังก์ชันเซฟรูป
         function saveChart(cardId) {
             const element = document.getElementById(cardId);
             const btn = element.querySelector('.btn-save');
-            btn.style.display = 'none'; // ซ่อนปุ่ม
+            btn.style.display = 'none';
             
             html2canvas(element, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `chart_${cardId}_${Date.now()}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
-                btn.style.display = 'block'; // คืนปุ่ม
+                btn.style.display = 'block';
             });
         }
 
-        // ฟังก์ชันเซฟรูปทั้งหน้า
         function saveDashboard() {
             const element = document.getElementById('dashboard-content');
             const btns = document.querySelectorAll('.btn-save');
             const mainBtn = document.querySelector('.dashboard-header button');
+            const filterCard = document.querySelector('.filter-card'); // ซ่อน Filter ตอนเซฟรูปใหญ่
             
             btns.forEach(b => b.style.display = 'none');
             mainBtn.style.display = 'none';
+            filterCard.style.boxShadow = 'none';
             
             html2canvas(element, { scale: 2, backgroundColor: '#f0f2f5' }).then(canvas => {
                 const link = document.createElement('a');
@@ -391,6 +423,7 @@
                 
                 btns.forEach(b => b.style.display = 'block');
                 mainBtn.style.display = 'block';
+                filterCard.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
             });
         }
     </script>
