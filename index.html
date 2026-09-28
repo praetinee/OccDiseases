@@ -86,7 +86,6 @@
         .rank-down { color: #dc3545; font-weight: bold; }
         .rank-same { color: #6c757d; }
 
-        /* ล็อกกรอบกราฟเพื่อแก้ปัญหาหน้าจอขาว (Infinite Resize Loop) */
         .chart-container {
             position: relative;
             height: 350px; 
@@ -173,30 +172,15 @@
 
         <!-- Charts Row -->
         <div class="row g-4 mb-4">
-            <div class="col-lg-8">
+            <div class="col-lg-12">
                 <div class="card h-100" id="card-top10">
                     <div class="card-header">
                         <span id="top10-title">📊 10 อันดับโรคสูงสุด</span>
                         <button class="btn btn-sm btn-outline-secondary action-buttons" onclick="saveElement('card-top10')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
-                        <!-- แก้บั๊กหน้าจอขาวด้วย chart-container -->
                         <div class="chart-container">
                             <canvas id="top10Chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="card h-100" id="card-group">
-                    <div class="card-header">
-                        <span>🎯 สัดส่วนกลุ่มโรค</span>
-                        <button class="btn btn-sm btn-outline-secondary action-buttons" onclick="saveElement('card-group')">เซฟรูป</button>
-                    </div>
-                    <div class="card-body">
-                        <!-- แก้บั๊กหน้าจอขาวและเอา d-flex ออก -->
-                        <div class="chart-container">
-                            <canvas id="groupChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -217,8 +201,7 @@
                                     <tr>
                                         <th style="width: 8%;">อันดับ</th>
                                         <th style="width: 12%;">ICD-10</th>
-                                        <th class="text-start" style="width: 35%;">ชื่อโรค</th>
-                                        <th>กลุ่มโรค</th>
+                                        <th class="text-start" style="width: 45%;">ชื่อโรค</th>
                                         <th>จำนวน (ราย)</th>
                                         <th>สัดส่วน (%)</th>
                                         <th>เทียบปีก่อน</th>
@@ -245,22 +228,7 @@
 
         let globalData = [];
         let filteredData = [];
-        let chartTop10, chartGroup;
-
-        const medColors = ['#1f77b4', '#17becf', '#2ca02c', '#ff7f0e', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f'];
-
-        function determineGroup(icd) {
-            if(!icd) return "อื่นๆ";
-            icd = icd.toUpperCase().trim();
-            if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) return "1. ตรวจสุขภาพ";
-            if(icd.startsWith('Z57')) return "2. ปัจจัยเสี่ยง";
-            if(icd.startsWith('G56') || icd.startsWith('M')) return "3.1 กระดูกและกล้ามเนื้อ";
-            if(icd.startsWith('J6') || icd.startsWith('J4') || icd.startsWith('J3')) return "3.2 ทางเดินหายใจ";
-            if(icd.startsWith('H83') || icd.startsWith('T75') || icd.startsWith('T67') || icd.startsWith('L23') || icd.startsWith('L24')) return "3.3 กายภาพและผิวหนัง";
-            if(icd.startsWith('T5') || icd.startsWith('T60')) return "3.4 สารเคมีและสารพิษ";
-            if(icd.startsWith('Y9')) return "4. สาเหตุภายนอก";
-            return "อื่นๆ";
-        }
+        let chartTop10;
 
         function parseNum(val) {
             if(!val) return 0;
@@ -278,8 +246,7 @@
                     icd: r[1].trim(),
                     year1: parseNum(r[2]),
                     year2: parseNum(r[3]),
-                    year3: parseNum(r[4]),
-                    group: determineGroup(r[1])
+                    year3: parseNum(r[4])
                 }));
                 updateView();
                 document.getElementById('loading').style.display = 'none';
@@ -382,37 +349,11 @@
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    maintainAspectRatio: false, // บังคับไม่ให้ล้นกรอบที่ตั้งไว้
+                    maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false },
                         tooltip: { callbacks: { title: (ctx) => top10[ctx[0].dataIndex].name } }
                     }
-                }
-            });
-
-            let groupSums = {};
-            filteredData.forEach(d => {
-                if (d[selectedKey] > 0) {
-                    groupSums[d.group] = (groupSums[d.group] || 0) + d[selectedKey];
-                }
-            });
-            
-            if (chartGroup) chartGroup.destroy();
-            chartGroup = new Chart(document.getElementById('groupChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(groupSums),
-                    datasets: [{
-                        data: Object.values(groupSums),
-                        backgroundColor: medColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // บังคับไม่ให้ล้นกรอบที่ตั้งไว้
-                    plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } },
-                    cutout: '60%'
                 }
             });
 
@@ -437,7 +378,6 @@
                     <td class="fw-bold">${rank}</td>
                     <td><span class="badge bg-secondary">${d.icd}</span></td>
                     <td class="text-start">${d.name}</td>
-                    <td>${d.group}</td>
                     <td class="fw-bold text-primary">${d[selectedKey].toLocaleString()}</td>
                     <td>${share}%</td>
                     <td>${trendIcon}</td>
@@ -452,10 +392,10 @@
             const yearText = document.getElementById('yearFilter').options[document.getElementById('yearFilter').selectedIndex].text;
             
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += `อันดับ,รหัส ICD-10,ชื่อโรค,กลุ่มโรค,จำนวนราย (${yearText})\n`;
+            csvContent += `อันดับ,รหัส ICD-10,ชื่อโรค,จำนวนราย (${yearText})\n`;
             
             filteredData.filter(d => d[selectedKey] > 0).forEach((d, index) => {
-                let row = `${index+1},${d.icd},"${d.name}",${d.group},${d[selectedKey]}`;
+                let row = `${index+1},${d.icd},"${d.name}",${d[selectedKey]}`;
                 csvContent += row + "\n";
             });
 
