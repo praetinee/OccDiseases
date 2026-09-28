@@ -22,10 +22,9 @@
     <style>
         body {
             font-family: 'Chakra Petch', sans-serif;
-            background-color: #f4f7f6; /* สีเทาอ่อนดูสะอาดตา */
+            background-color: #f4f7f6;
             color: #2c3e50;
         }
-        /* Medical Theme Gradient */
         .dashboard-header {
             background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             color: white;
@@ -40,7 +39,7 @@
             padding: 20px;
             margin-bottom: 25px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-            border-left: 5px solid #17a2b8; /* Teal color */
+            border-left: 5px solid #17a2b8;
         }
         .card {
             border: none;
@@ -72,45 +71,27 @@
             flex-direction: column;
             justify-content: center;
         }
-        /* KPI Colors */
         .kpi-border-blue { border-bottom: 4px solid #0275d8; }
         .kpi-border-teal { border-bottom: 4px solid #17a2b8; }
         .kpi-border-orange { border-bottom: 4px solid #f0ad4e; }
 
-        .kpi-title {
-            color: #7f8c8d;
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .kpi-value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        .kpi-sub {
-            font-size: 0.85rem;
-            color: #95a5a6;
-            margin-top: 5px;
-        }
-        .btn-action {
-            font-size: 0.9rem;
-            font-weight: 500;
-            border-radius: 6px;
-            padding: 6px 15px;
-        }
-        .table-custom {
-            font-size: 0.95rem;
-        }
-        .table-custom thead th {
-            background-color: #f8f9fa;
-            color: #203a43;
-            font-weight: 600;
-            border-bottom: 2px solid #dee2e6;
-        }
+        .kpi-title { color: #7f8c8d; font-size: 0.95rem; font-weight: 600; margin-bottom: 5px; }
+        .kpi-value { font-size: 2.2rem; font-weight: 700; line-height: 1.2; }
+        .kpi-sub { font-size: 0.85rem; color: #95a5a6; margin-top: 5px; }
+        .btn-action { font-size: 0.9rem; font-weight: 500; border-radius: 6px; padding: 6px 15px; }
+        
+        .table-custom { font-size: 0.95rem; }
+        .table-custom thead th { background-color: #f8f9fa; color: #203a43; font-weight: 600; border-bottom: 2px solid #dee2e6; }
         .rank-up { color: #28a745; font-weight: bold; }
         .rank-down { color: #dc3545; font-weight: bold; }
         .rank-same { color: #6c757d; }
+
+        /* ล็อกกรอบกราฟเพื่อแก้ปัญหาหน้าจอขาว (Infinite Resize Loop) */
+        .chart-container {
+            position: relative;
+            height: 350px; 
+            width: 100%;
+        }
 
         #loading {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -164,7 +145,7 @@
 
         <!-- KPI Cards -->
         <div class="row g-4 mb-4">
-            <!-- KPI 1: Total -->
+            <!-- KPI 1 -->
             <div class="col-md-4">
                 <div class="kpi-box kpi-border-blue">
                     <div class="kpi-title" id="kpi-year-label">ผู้ป่วยอาชีวเวชกรรมรวม</div>
@@ -172,7 +153,7 @@
                     <div class="kpi-sub" id="kpi-growth">-</div>
                 </div>
             </div>
-            <!-- KPI 2: Top Disease -->
+            <!-- KPI 2 -->
             <div class="col-md-4">
                 <div class="kpi-box kpi-border-teal">
                     <div class="kpi-title">โรคอันดับ 1 ที่พบมากที่สุด</div>
@@ -180,7 +161,7 @@
                     <div class="kpi-sub" id="kpi-top-icd">-</div>
                 </div>
             </div>
-            <!-- KPI 3: Emerging Risk -->
+            <!-- KPI 3 -->
             <div class="col-md-4">
                 <div class="kpi-box kpi-border-orange">
                     <div class="kpi-title">🚨 โรคเฝ้าระวัง (อัตราเพิ่มสูงสุด)</div>
@@ -199,7 +180,10 @@
                         <button class="btn btn-sm btn-outline-secondary action-buttons" onclick="saveElement('card-top10')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
-                        <canvas id="top10Chart"></canvas>
+                        <!-- แก้บั๊กหน้าจอขาวด้วย chart-container -->
+                        <div class="chart-container">
+                            <canvas id="top10Chart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -209,8 +193,11 @@
                         <span>🎯 สัดส่วนกลุ่มโรค</span>
                         <button class="btn btn-sm btn-outline-secondary action-buttons" onclick="saveElement('card-group')">เซฟรูป</button>
                     </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <canvas id="groupChart"></canvas>
+                    <div class="card-body">
+                        <!-- แก้บั๊กหน้าจอขาวและเอา d-flex ออก -->
+                        <div class="chart-container">
+                            <canvas id="groupChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,7 +247,6 @@
         let filteredData = [];
         let chartTop10, chartGroup;
 
-        // โทนสีการแพทย์ (Medical Palette)
         const medColors = ['#1f77b4', '#17becf', '#2ca02c', '#ff7f0e', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f'];
 
         function determineGroup(icd) {
@@ -305,7 +291,6 @@
         });
 
         function calculateRankings(data, targetYear) {
-            // Sort by target year to get rank
             let sorted = [...data].sort((a, b) => b[targetYear] - a[targetYear]);
             let rankMap = {};
             sorted.forEach((d, index) => {
@@ -321,21 +306,17 @@
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const yearText = document.getElementById('yearFilter').options[document.getElementById('yearFilter').selectedIndex].text.split(' ')[0];
             
-            // 1. Search Filter
             filteredData = globalData.filter(d => 
                 d.name.toLowerCase().includes(searchText) || 
                 d.icd.toLowerCase().includes(searchText)
             );
-
-            // 2. Sort Data
             filteredData.sort((a, b) => b[selectedKey] - a[selectedKey]);
 
-            // หาคีย์ปีที่แล้วเพื่อคำนวณ Rank และ Growth
             let prevKey = selectedKey === 'year3' ? 'year2' : (selectedKey === 'year2' ? 'year1' : null);
             let currentRanks = calculateRankings(filteredData, selectedKey);
             let prevRanks = prevKey ? calculateRankings(filteredData, prevKey) : {};
 
-            // --- อัปเดต KPI ---
+            // Update KPIs
             let totalSelected = filteredData.reduce((sum, d) => sum + d[selectedKey], 0);
             let totalPrev = prevKey ? filteredData.reduce((sum, d) => sum + d[prevKey], 0) : 0;
             
@@ -352,7 +333,6 @@
                 growthEl.innerHTML = `<span class="text-muted">- ไม่มีฐานข้อมูลเปรียบเทียบ -</span>`;
             }
 
-            // Top Disease
             if(filteredData.length > 0 && filteredData[0][selectedKey] > 0) {
                 let topD = filteredData[0];
                 let pctShare = ((topD[selectedKey] / totalSelected) * 100).toFixed(1);
@@ -363,7 +343,6 @@
                 document.getElementById('kpi-top-icd').innerText = "-";
             }
 
-            // Emerging Risk (หาโรคที่ยอดเพิ่ม % สูงสุด โดยต้องมียอดเดิมเกิน 10 รายเพื่อกันค่าสวิง)
             if (prevKey) {
                 let emerging = [...filteredData].filter(d => d[prevKey] >= 10).sort((a, b) => {
                     let growthA = (a[selectedKey] - a[prevKey]) / a[prevKey];
@@ -384,7 +363,7 @@
                 document.getElementById('kpi-emerging-growth').innerText = "ต้องเลือกปี 68 หรือ 69";
             }
 
-            // --- อัปเดตกราฟ Top 10 ---
+            // Charts Updates
             const top10 = filteredData.slice(0, 10).filter(d => d[selectedKey] > 0);
             document.getElementById('top10-title').innerText = `📊 10 อันดับโรคสูงสุด (${yearText})`;
             
@@ -392,17 +371,18 @@
             chartTop10 = new Chart(document.getElementById('top10Chart'), {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => `${d.icd}`), // เอาแค่รหัสให้กราฟไม่รก
+                    labels: top10.map(d => `${d.icd}`),
                     datasets: [{
                         label: 'จำนวน (ราย)',
                         data: top10.map(d => d[selectedKey]),
-                        backgroundColor: '#17a2b8', // Teal color
+                        backgroundColor: '#17a2b8',
                         borderRadius: 4
                     }]
                 },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
+                    maintainAspectRatio: false, // บังคับไม่ให้ล้นกรอบที่ตั้งไว้
                     plugins: { 
                         legend: { display: false },
                         tooltip: { callbacks: { title: (ctx) => top10[ctx[0].dataIndex].name } }
@@ -410,7 +390,6 @@
                 }
             });
 
-            // --- อัปเดตกราฟ Donut ---
             let groupSums = {};
             filteredData.forEach(d => {
                 if (d[selectedKey] > 0) {
@@ -431,24 +410,21 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: false, // บังคับไม่ให้ล้นกรอบที่ตั้งไว้
                     plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } },
                     cutout: '60%'
                 }
             });
 
-            // --- อัปเดตตาราง ---
+            // Table Updates
             let tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
             filteredData.filter(d => d[selectedKey] > 0).forEach((d, index) => {
                 let tr = document.createElement('tr');
                 let rank = index + 1;
-                
-                // คำนวณ % share
                 let share = ((d[selectedKey] / totalSelected) * 100).toFixed(2);
                 
-                // สัญลักษณ์การเปลี่ยนอันดับ
                 let trendIcon = '<span class="rank-same">-</span>';
                 if(prevKey) {
                     let pRank = prevRanks[d.icd];
@@ -470,13 +446,12 @@
             });
         }
 
-        // ฟังก์ชันส่งออก CSV
         function exportCSV() {
             if(filteredData.length === 0) return;
             const selectedKey = document.getElementById('yearFilter').value;
             const yearText = document.getElementById('yearFilter').options[document.getElementById('yearFilter').selectedIndex].text;
             
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // รองรับภาษาไทย
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             csvContent += `อันดับ,รหัส ICD-10,ชื่อโรค,กลุ่มโรค,จำนวนราย (${yearText})\n`;
             
             filteredData.filter(d => d[selectedKey] > 0).forEach((d, index) => {
@@ -493,7 +468,6 @@
             document.body.removeChild(link);
         }
 
-        // ฟังก์ชันเซฟรูป
         function saveElement(id) {
             const el = document.getElementById(id);
             const btns = el.querySelectorAll('.action-buttons');
