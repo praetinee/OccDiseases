@@ -1,789 +1,439 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบแดชบอร์ดสรุปรายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  
-  <!-- html2canvas for Exporting Images -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
-  <!-- PapaParse for parsing CSV from Google Sheets -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</title>
+    
+    <!-- นำเข้าฟอนต์ Chakra Petch จาก Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse สำหรับดึงข้อมูลจาก Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- html2canvas สำหรับเซฟรูป -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Google Fonts: Chakra Petch -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
-  
-  <!-- Phosphor Icons for Crisp Medical Dashboard UI -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Chakra Petch"', 'sans-serif'],
-            heading: ['"Chakra Petch"', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              800: '#115e59',
-              900: '#134e4a',
-            },
-            navy: {
-              800: '#1e293b',
-              900: '#0f172a',
-            }
-          }
+    <style>
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
         }
-      }
-    }
-  </script>
-
-  <style>
-    body {
-      font-family: 'Chakra Petch', sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-    h1, h2, h3, h4, .font-heading {
-      font-family: 'Chakra Petch', sans-serif;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-    }
-    .chart-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 280px;
-    }
-    /* Loading Overlay */
-    #loadingOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255, 255, 255, 0.9);
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.5s ease;
-    }
-  </style>
+        .dashboard-header {
+            background: #0d6efd;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: white;
+            font-weight: 600;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kpi-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #0d6efd;
+        }
+        .btn-save {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+        }
+        #loading {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-teal-500 selection:text-white relative">
+<body>
 
-  <!-- Loading Screen -->
-  <div id="loadingOverlay">
-    <i class="ph-bold ph-spinner-gap animate-spin text-5xl text-teal-600 mb-4"></i>
-    <h2 class="text-xl font-bold text-slate-800 font-heading">กำลังดึงข้อมูลจาก Google Sheets...</h2>
-    <p class="text-sm text-slate-500 mt-2">กรุณารอสักครู่ ระบบกำลังประมวลผลข้อมูลล่าสุด</p>
-  </div>
-
-  <div class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm no-print">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30">
-          <i class="ph-bold ph-first-aid text-2xl"></i>
-        </div>
-        <div>
-          <span class="text-xs font-semibold tracking-wider uppercase text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60">
-            Occupational Health Surveillance
-          </span>
-          <h1 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">
-            ระบบแดชบอร์ดสรุปรายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม
-          </h1>
-        </div>
-      </div>
-
-      <!-- Action buttons -->
-      <div class="flex items-center space-x-2.5">
-        <button id="btnRefreshData" onclick="fetchDataFromGoogleSheets()" class="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-2 rounded-lg text-sm transition border border-blue-200">
-          <i class="ph-bold ph-arrows-clockwise text-base"></i>
-          <span class="hidden sm:inline">รีเฟรชข้อมูล</span>
-        </button>
-        <button id="btnExportAll" onclick="exportFullDashboard()" class="flex items-center space-x-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm shadow-sm transition-all duration-150 active:scale-95">
-          <i class="ph-bold ph-camera text-base"></i>
-          <span>บันทึกภาพรายงานทั้งแดชบอร์ด (PNG)</span>
-        </button>
-        <button onclick="window.print()" class="hidden sm:flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-2 rounded-lg text-sm transition">
-          <i class="ph-bold ph-printer text-base"></i>
-          <span>พิมพ์</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <main id="dashboardCaptureArea" class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 space-y-6">
-
-    <!-- Hospital & Meta Info Header Banner -->
-    <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
-      <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-        <i class="ph-fill ph-activity text-[240px]"></i>
-      </div>
-      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1.5">
-          <div class="flex items-center gap-2 text-teal-300 text-sm font-medium">
-            <i class="ph-bold ph-hospital text-lg"></i>
-            <span>กลุ่มงานอาชีวเวชกรรม โรงพยาบาลสันทราย จ.เชียงใหม่</span>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            รายงานสถิติโรคจากการทำงานและสิ่งแวดล้อม
-          </h2>
-          <p class="text-slate-300 text-sm max-w-2xl">
-            ข้อมูลดึงตรงจาก Google Sheets (ชีต "สรุป") แบบ Real-time
-          </p>
-        </div>
-        <div class="flex flex-row md:flex-col items-start md:items-end justify-between border-t md:border-t-0 border-slate-700/60 pt-3 md:pt-0 gap-1 text-right">
-          <span class="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur text-emerald-300 text-xs px-3 py-1 rounded-full border border-emerald-400/20">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            เชื่อมต่อ Google Sheets สำเร็จ
-          </span>
-          <span class="text-xs text-slate-300 mt-1" id="lastUpdatedTime">อัปเดตล่าสุด: กำลังโหลด...</span>
-          <span class="text-xs text-teal-200/90 font-mono" id="totalCasesLabel">จำนวนเคสบันทึกในระบบ: กำลังคำนวณ...</span>
-        </div>
-      </div>
+    <!-- หน้าจอโหลดข้อมูล -->
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <h4 class="mt-3 font-chakra">กำลังดึงข้อมูลจาก Google Sheets...</h4>
+        <p class="text-muted">โปรดตรวจสอบให้แน่ใจว่าเปิดแชร์ลิงก์ Sheet เป็น "ทุกคนที่มีลิงก์"</p>
     </div>
 
-    <!-- Interactive Filters Card -->
-    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
-      <div class="flex items-center gap-2 text-slate-700 font-semibold text-sm">
-        <i class="ph-bold ph-funnel text-teal-600 text-lg"></i>
-        <span>ตัวกรองการแสดงผลข้อมูล:</span>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- Filter Group -->
-        <div class="flex items-center gap-2">
-          <label for="filterGroup" class="text-xs font-medium text-slate-500">กลุ่มโรค:</label>
-          <select id="filterGroup" onchange="applyFilters()" class="text-sm bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-700 font-medium">
-            <option value="ALL">ทุกกลุ่มโรค (ทั้งหมด)</option>
-            <option value="Z_EVALUATION">หมวดการตรวจสุขภาพ (Z02, Z10, Z04)</option>
-            <option value="Z_EXPOSURE">หมวดการสัมผัสปัจจัยเสี่ยง (Z57)</option>
-            <option value="MUSCULO">ระบบกระดูก กล้ามเนื้อ (G56, M54, M70...)</option>
-            <option value="RESPIRATORY">ระบบทางเดินหายใจ (J60-J68)</option>
-            <option value="ENVIRONMENTAL_DERMA">สภาวะแวดล้อมกายภาพและโรคผิวหนัง (H83, T75, L23...)</option>
-            <option value="TOXICOLOGY">สารเคมีและสารพิษ (T52-T60)</option>
-            <option value="Y_EXTERNAL">หมวดสาเหตุภายนอก (Y96, Y97, Y93)</option>
-            <option value="OTHER">อื่นๆ</option>
-          </select>
-        </div>
-
-        <!-- Filter Patient Type -->
-        <div class="flex items-center gap-2">
-          <label for="filterType" class="text-xs font-medium text-slate-500">ประเภทผู้ป่วย:</label>
-          <select id="filterType" onchange="applyFilters()" class="text-sm bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-700 font-medium">
-            <option value="ALL">ทั้งหมด (ใหม่ + เก่า)</option>
-            <option value="NEW">ผู้ป่วยใหม่ (New Cases)</option>
-            <option value="OLD">ผู้ป่วยเก่า (Re-visits)</option>
-          </select>
-        </div>
-
-        <!-- Reset Button -->
-        <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-teal-700 underline font-medium px-2 py-1">
-          รีเซ็ตตัวกรอง
-        </button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- KPI 1 -->
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 relative overflow-hidden transition-all hover:shadow-md">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">รวมเคสทั้งหมด</span>
-          <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-            <i class="ph-bold ph-users-three text-lg"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="kpiTotalVisits" class="text-3xl font-extrabold text-slate-800">-</span>
-          <span class="text-xs font-semibold text-slate-500">ครั้ง/เคส</span>
-        </div>
-      </div>
-
-      <!-- KPI 2 -->
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 relative overflow-hidden transition-all hover:shadow-md">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">ผู้ป่วยใหม่</span>
-          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-            <i class="ph-bold ph-user-plus text-lg"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="kpiNewCases" class="text-3xl font-extrabold text-blue-700">-</span>
-          <span class="text-xs font-semibold text-slate-500">รายใหม่</span>
-        </div>
-      </div>
-
-      <!-- KPI 3 -->
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 relative overflow-hidden transition-all hover:shadow-md">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">ผู้ป่วยเก่า</span>
-          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <i class="ph-bold ph-users text-lg"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="kpiOldCases" class="text-3xl font-extrabold text-indigo-700">-</span>
-          <span class="text-xs font-semibold text-slate-500">รายเก่า</span>
-        </div>
-      </div>
-      
-       <!-- KPI 4 -->
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 relative overflow-hidden transition-all hover:shadow-md">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">โรคอันดับ 1</span>
-          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-            <i class="ph-bold ph-warning-circle text-lg"></i>
-          </div>
-        </div>
-        <div class="mt-3">
-          <span id="kpiTopDisease" class="text-xl font-extrabold text-rose-700 line-clamp-1">-</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-      <!-- Chart 1: Top Diseases Horizontal Bar (8 cols) -->
-      <div class="lg:col-span-8 bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="p-1 rounded bg-teal-100 text-teal-700 text-xs font-bold">TOP DISEASES</span>
-              <h3 class="font-bold text-slate-800 text-base sm:text-lg">อันดับโรคจากการทำงานและสิ่งแวดล้อมที่พบมากที่สุด</h3>
+    <div class="container py-4" id="dashboard-content">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div>
+                <h2 class="mb-0 fw-bold">รายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</h2>
+                <p class="mb-0 text-white-50">รพ.สันทราย จ.เชียงใหม่</p>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">เรียงลำดับตามจำนวนเคสที่พบ (ข้อมูลจาก Sheet สรุป)</p>
-          </div>
-          <button onclick="downloadSingleChart('chartTopDiseases', 'top-diseases.png')" title="บันทึกกราฟนี้เป็นภาพ PNG" class="no-print flex items-center space-x-1 text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 px-2.5 py-1.5 rounded-lg border border-slate-200 transition">
-            <i class="ph-bold ph-download-simple"></i>
-            <span>เซฟรูปกราฟ</span>
-          </button>
+            <button class="btn btn-light fw-bold" onclick="saveDashboard()">💾 บันทึกทั้งแดชบอร์ด (PNG)</button>
         </div>
 
-        <div class="py-3 flex-1 min-h-[400px]">
-          <canvas id="chartTopDiseases"></canvas>
+        <!-- Filters -->
+        <div class="card p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">กรองตามหมวดหมู่โรค (ตามคู่มือ ICD-10 อาชีวเวชกรรม)</label>
+                    <select id="groupFilter" class="form-select" onchange="applyFilters()">
+                        <option value="all">แสดงทุกหมวดหมู่</option>
+                        <option value="1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม">1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม</option>
+                        <option value="2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน">2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน</option>
+                        <option value="3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท">3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท</option>
+                        <option value="3.2 โรคระบบทางเดินหายใจจากการทำงาน">3.2 โรคระบบทางเดินหายใจจากการทำงาน</option>
+                        <option value="3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง">3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง</option>
+                        <option value="3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม">3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม</option>
+                        <option value="4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ">4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ</option>
+                        <option value="อื่นๆ (ไม่ได้ระบุในหมวดหลัก)">อื่นๆ (ไม่ได้ระบุในหมวดหลัก)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">กรองประเภทผู้ป่วย</label>
+                    <select id="patientFilter" class="form-select" onchange="applyFilters()">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="ผู้ป่วยใหม่">เฉพาะผู้ป่วยใหม่</option>
+                        <option value="ผู้ป่วยเก่า">เฉพาะผู้ป่วยเก่า</option>
+                    </select>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <!-- Chart 2: Major Disease Category Proportion (4 cols) -->
-      <div class="lg:col-span-4 bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h3 class="font-bold text-slate-800 text-base sm:text-lg">สัดส่วนกลุ่มโรคหลัก</h3>
-            <p class="text-xs text-slate-500 mt-0.5">แบ่งตามกลุ่มอาการอ้างอิง ICD-10 อาชีวเวชกรรม</p>
-          </div>
-          <button onclick="downloadSingleChart('chartCategories', 'disease-categories.png')" title="บันทึกกราฟนี้เป็นภาพ PNG" class="no-print flex items-center space-x-1 text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 px-2.5 py-1.5 rounded-lg border border-slate-200 transition">
-            <i class="ph-bold ph-download-simple"></i>
-            <span>เซฟรูป</span>
-          </button>
+        <!-- KPI Cards -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <h5 class="text-muted">จำนวนการเข้ารับบริการทั้งหมด</h5>
+                    <div class="kpi-value" id="kpi-total">0</div>
+                    <div>ครั้ง (Visits)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <h5 class="text-muted">ผู้ป่วยใหม่</h5>
+                    <div class="kpi-value text-success" id="kpi-new">0</div>
+                    <div>ราย</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <h5 class="text-muted">โรคอันดับ 1 ที่พบ</h5>
+                    <div class="kpi-value text-danger" style="font-size: 1.8rem;" id="kpi-top-disease">-</div>
+                    <div id="kpi-top-icd">-</div>
+                </div>
+            </div>
         </div>
 
-        <div class="py-3 flex-1 min-h-[300px] flex items-center justify-center relative">
-          <canvas id="chartCategories"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Data Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-        <div>
-          <h3 class="font-bold text-slate-800 text-base">ตารางข้อมูลสถิติโรคดิบ (จาก Google Sheets)</h3>
-          <p class="text-xs text-slate-500">ข้อมูลอัปเดตตามตัวกรองด้านบน</p>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs sm:text-sm">
-          <thead class="bg-slate-100/70 text-slate-700 font-heading font-semibold uppercase text-xs tracking-wider">
-            <tr>
-              <th class="py-3 px-4">อันดับ</th>
-              <th class="py-3 px-4">รหัส ICD-10</th>
-              <th class="py-3 px-4">ชื่อโรค</th>
-              <th class="py-3 px-4">กลุ่มโรค</th>
-              <th class="py-3 px-4 text-right">จำนวนเคสรวม</th>
-              <th class="py-3 px-4 text-right text-blue-600">ผู้ป่วยใหม่</th>
-              <th class="py-3 px-4 text-right text-indigo-600">ผู้ป่วยเก่า</th>
-            </tr>
-          </thead>
-          <tbody id="diseaseTableBody" class="divide-y divide-slate-200 text-slate-700">
-            <!-- Populated dynamically via JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
-
-  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
-    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm border border-slate-700">
-      <i id="toastIcon" class="ph-bold ph-info text-teal-400 text-xl"></i>
-      <span id="toastMessage">แจ้งเตือน</span>
-    </div>
-  </div>
-
-  <footer class="bg-white border-t border-slate-200 mt-8 py-5 text-center text-xs text-slate-500 no-print">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <div>
-        งานสารสนเทศและเฝ้าระวังโรค • กลุ่มงานอาชีวเวชกรรม โรงพยาบาลสันทราย
-      </div>
-      <div>
-        ดึงข้อมูลจริงจาก Google Sheets
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    // --- ตั้งค่า GOOGLE SHEETS ---
-    // นี่คือ ID ของ Sheet ที่คุณส่งมา
-    const SPREADSHEET_ID = '1xswOes7vFaiKMf2Pb5pcBeFA-Zb0N_ot';
-    // นี่คือ gid ของชีตชื่อ "สรุป" ที่คุณระบุ
-    const GID = '486947397'; 
-    
-    // สร้าง URL สำหรับดึงข้อมูลเป็น CSV ผ่าน Google Sheets Export API
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID}`;
-
-    let masterData = []; // เก็บข้อมูลที่แปลงแล้ว
-    let chartInstances = {};
-    
-    // Colors for charting
-    const colors = ['#14b8a6', '#0d9488', '#6366f1', '#2dd4bf', '#4f46e5', '#4338ca', '#3730a3', '#f59e0b', '#818cf8', '#312e81', '#0ea5e9', '#ec4899', '#8b5cf6'];
-
-    // Define colors and names for Groups based on exact ICD-10 rules from provided PDF
-    const groupMap = {
-        'Z_EVALUATION': { th: '1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม', color: '#10b981', bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' }, 
-        'Z_EXPOSURE': { th: '2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน', color: '#f59e0b', bgClass: 'bg-amber-50 text-amber-800 border-amber-200' }, 
-        'MUSCULO': { th: '3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท', color: '#6366f1', bgClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' }, 
-        'RESPIRATORY': { th: '3.2 โรคระบบทางเดินหายใจจากการทำงาน', color: '#0ea5e9', bgClass: 'bg-sky-50 text-sky-700 border-sky-200' }, 
-        'ENVIRONMENTAL_DERMA': { th: '3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง', color: '#ec4899', bgClass: 'bg-pink-50 text-pink-700 border-pink-200' }, 
-        'TOXICOLOGY': { th: '3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม', color: '#8b5cf6', bgClass: 'bg-purple-50 text-purple-700 border-purple-200' }, 
-        'Y_EXTERNAL': { th: '4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ', color: '#ef4444', bgClass: 'bg-red-50 text-red-700 border-red-200' }, 
-        'OTHER': { th: 'อื่นๆ', color: '#94a3b8', bgClass: 'bg-slate-100 text-slate-700 border-slate-200' }
-    };
-
-    // Helper to determine group based on exact ICD-10 rules from PDF
-    function determineGroup(icd) {
-        if(!icd) return 'OTHER';
-        icd = icd.toString().toUpperCase().trim();
-        
-        // 1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม
-        if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) return 'Z_EVALUATION';
-        
-        // 2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน
-        if(icd.startsWith('Z57')) return 'Z_EXPOSURE';
-        
-        // 3. หมวดโรคและการเจ็บป่วยจากการทำงาน
-        // 3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท
-        if(icd.startsWith('M') || icd === 'G56' || icd.startsWith('G56')) return 'MUSCULO'; 
-        // 3.2 โรคระบบทางเดินหายใจจากการทํางาน
-        if(icd.startsWith('J')) return 'RESPIRATORY';
-        // 3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง
-        if(icd.startsWith('H83') || icd.startsWith('L23') || icd.startsWith('L24') || icd.startsWith('T67') || icd.startsWith('T75')) return 'ENVIRONMENTAL_DERMA';
-        // 3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม
-        if(icd.startsWith('T52') || icd.startsWith('T56') || icd.startsWith('T59') || icd.startsWith('T60')) return 'TOXICOLOGY';
-        
-        // 4. รหัสสาเหตุภายนอก
-        if(icd.startsWith('Y96') || icd.startsWith('Y97') || icd.startsWith('Y93')) return 'Y_EXTERNAL';
-
-        return 'OTHER';
-    }
-
-    async function fetchDataFromGoogleSheets() {
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      loadingOverlay.style.display = 'flex';
-      loadingOverlay.style.opacity = '1';
-
-      try {
-        Papa.parse(csvUrl, {
-          download: true,
-          header: true, // กำหนดให้แถวแรกเป็นชื่อคอลัมน์
-          skipEmptyLines: true,
-          complete: function(results) {
-            console.log("ข้อมูล CSV ดิบ:", results.data);
-            processData(results.data);
+        <!-- Charts -->
+        <div class="row">
+            <!-- Top 10 Diseases -->
+            <div class="col-md-8">
+                <div class="card h-100" id="card-disease">
+                    <div class="card-header">
+                        <span>10 อันดับโรคทางอาชีวเวชกรรมที่พบสูงสุด</span>
+                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-disease')">เซฟรูป</button>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="diseaseChart"></canvas>
+                    </div>
+                </div>
+            </div>
             
-            // ซ่อนหน้าจอ Loading
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
+            <!-- Disease Groups -->
+            <div class="col-md-4">
+                <div class="card h-100" id="card-group">
+                    <div class="card-header">
+                        <span>สัดส่วนกลุ่มโรคหลัก</span>
+                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-group')">เซฟรูป</button>
+                    </div>
+                    <div class="card-body d-flex align-items-center">
+                        <canvas id="groupChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Occupations -->
+            <div class="col-md-6">
+                <div class="card h-100" id="card-occ">
+                    <div class="card-header">
+                        <span>อาชีพที่พบการเจ็บป่วยสูงสุด</span>
+                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-occ')">เซฟรูป</button>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="occChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Areas -->
+            <div class="col-md-6">
+                <div class="card h-100" id="card-area">
+                    <div class="card-header">
+                        <span>พื้นที่ (ตำบล) ที่พบสูงสุด</span>
+                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-area')">เซฟรูป</button>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="areaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ตั้งค่า Font ของ Chart.js ให้เป็น Chakra Petch ทั้งหมด
+        Chart.defaults.font.family = "'Chakra Petch', sans-serif";
+        Chart.defaults.font.size = 14;
+
+        const SHEET_ID = '1xswOes7vFaiKMf2Pb5pcBeFA-Zb0N_ot';
+        const GID = '486947397';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+
+        let rawData = [];
+        let chartDisease, chartGroup, chartOcc, chartArea;
+
+        // จัดกลุ่มโรคตาม PDF ที่ผู้ใช้แนบมาอย่างเคร่งครัด
+        function determineGroup(icd) {
+            if(!icd) return "อื่นๆ (ไม่ได้ระบุในหมวดหลัก)";
+            icd = icd.toUpperCase().trim();
             
-            // อัปเดตเวลาล่าสุด
-            const now = new Date();
-            document.getElementById('lastUpdatedTime').textContent = `อัปเดตล่าสุด: ${now.toLocaleTimeString('th-TH')}`;
-            showToast('ดึงข้อมูลจาก Google Sheets สำเร็จ', 'ph-check-circle', 'text-teal-400');
-          },
-          error: function(err) {
-            console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
-            loadingOverlay.innerHTML = `
-              <i class="ph-bold ph-warning-circle text-5xl text-red-500 mb-4"></i>
-              <h2 class="text-xl font-bold text-slate-800 font-heading">เกิดข้อผิดพลาดในการดึงข้อมูล</h2>
-              <p class="text-sm text-slate-500 mt-2 text-center px-6">ระบบไม่สามารถอ่านข้อมูลจาก Google Sheets ได้<br>โปรดตรวจสอบว่าไฟล์ตั้งค่าแชร์เป็น <strong>"ทุกคนที่มีลิงก์ (Anyone with the link)"</strong> แล้วหรือยัง</p>
-              <button onclick="location.reload()" class="mt-6 px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium shadow-sm">ลองใหม่อีกครั้ง</button>
-            `;
-            showToast('เกิดข้อผิดพลาด กรุณาตรวจสอบสิทธิ์การแชร์ไฟล์', 'ph-warning-circle', 'text-red-400');
-          }
-        });
-      } catch (error) {
-        console.error("Fetch error:", error);
-      }
-    }
-
-    function processData(csvData) {
-      masterData = [];
-      
-      if(csvData.length === 0) return;
-      
-      const headers = Object.keys(csvData[0]);
-      console.log("พบชื่อคอลัมน์ต่อไปนี้:", headers);
-
-      // --- ระบบค้นหาชื่อคอลัมน์อัตโนมัติ (Heuristic Mapping) ---
-      // ระบบจะพยายามหาคำที่เกี่ยวข้องในชื่อคอลัมน์ของคุณ
-      const keyIcd = headers.find(h => h.toLowerCase().includes('icd') || h.includes('รหัส')) || headers[0];
-      const keyNameTh = headers.find(h => h.includes('โรค') || h.includes('ชื่อ') || h.includes('อาการ') || h.includes('descrip')) || headers[1];
-      // ค้นหาคอลัมน์ที่น่าจะเป็นยอดรวม
-      const countCandidates = headers.filter(h => h.includes('รวม') || h.includes('ทั้งหมด') || h.includes('จำนวน') || h.includes('ยอด') || h.includes('count'));
-      // ใช้คอลัมน์สุดท้ายที่เป็นตัวเลขถ้าหาไม่เจอ
-      const keyCount = countCandidates.length > 0 ? countCandidates[0] : headers[headers.length-1];
-      
-      const keyNew = headers.find(h => h.includes('ใหม่') || h.includes('new')) || null;
-      const keyOld = headers.find(h => h.includes('เก่า') || h.includes('old')) || null;
-
-      csvData.forEach((row, index) => {
-        // ข้ามแถวที่ว่างเปล่าทั้งหมด หรือคอลัมน์แรกไม่มีข้อมูล
-        if(Object.values(row).every(v => v === '') || !row[keyIcd]) return;
-
-        let icd = row[keyIcd] ? row[keyIcd].toString().trim() : `Unknown-${index}`;
-        let countRaw = parseInt(row[keyCount] || 0);
-        if (isNaN(countRaw)) countRaw = 1; // สมมติว่าแต่ละแถวคือ 1 เคสถ้าไม่มีคอลัมน์นับยอดรวม
-        
-        // ข้ามแถวที่จำนวนเป็น 0 
-        if (countRaw === 0) return;
-
-        // ถ้าไม่มีคอลัมน์ผู้ป่วยใหม่/เก่า จะทำการคำนวณแบบจำลองให้ดูเป็นตัวอย่าง
-        let newCasesRaw = keyNew && row[keyNew] !== '' ? parseInt(row[keyNew]) : Math.floor(countRaw * 0.2); 
-        let oldCasesRaw = keyOld && row[keyOld] !== '' ? parseInt(row[keyOld]) : (countRaw - newCasesRaw);
-        
-        if (isNaN(newCasesRaw)) newCasesRaw = 0;
-        if (isNaN(oldCasesRaw)) oldCasesRaw = 0;
-
-        let group = determineGroup(icd);
-
-        masterData.push({
-          icd: icd,
-          nameTh: row[keyNameTh] || 'ไม่ระบุชื่อโรค',
-          group: group,
-          count: countRaw,
-          newCases: newCasesRaw,
-          oldCases: oldCasesRaw,
-          color: colors[index % colors.length]
-        });
-      });
-
-      // ยุบรวมข้อมูลที่มีรหัส ICD-10 เดียวกันเข้าด้วยกัน (เผื่อว่าชีตแยกเป็นรายบรรทัด)
-      const aggregatedData = {};
-      masterData.forEach(item => {
-        if (!aggregatedData[item.icd]) {
-           aggregatedData[item.icd] = { ...item };
-        } else {
-           aggregatedData[item.icd].count += item.count;
-           aggregatedData[item.icd].newCases += item.newCases;
-           aggregatedData[item.icd].oldCases += item.oldCases;
-        }
-      });
-      masterData = Object.values(aggregatedData);
-
-      // เรียงลำดับตามจำนวนเคสจากมากไปน้อย
-      masterData.sort((a, b) => b.count - a.count);
-      
-      // Assign ranks และอัปเดตสี
-      masterData.forEach((item, idx) => { 
-        item.rank = idx + 1; 
-        item.color = colors[idx % colors.length];
-      });
-
-      console.log("ข้อมูลที่ประมวลผลพร้อมแสดงผล:", masterData);
-
-      // Initial Render
-      initCharts();
-      applyFilters(); 
-    }
-
-    function initCharts() {
-      Chart.defaults.font.family = "'Chakra Petch', sans-serif";
-      Chart.defaults.color = '#475569';
-
-      // Destroy old instances if re-fetching
-      if (chartInstances.topDiseases) chartInstances.topDiseases.destroy();
-      if (chartInstances.categories) chartInstances.categories.destroy();
-
-      // 1. Chart Top Diseases (Horizontal Bar)
-      const ctxTop = document.getElementById('chartTopDiseases').getContext('2d');
-      chartInstances.topDiseases = new Chart(ctxTop, {
-        type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'จำนวนเคส (ราย)',
-            data: [],
-            backgroundColor: [],
-            borderRadius: 6,
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (item) => `จำนวนเคส: ${item.raw} ราย`
-              }
+            // 1. หมวดการตรวจสุขภาพ
+            if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) {
+                return "1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม";
             }
-          },
-          scales: {
-            x: { grid: { color: '#f1f5f9' }, ticks: { font: { family: "'Chakra Petch', sans-serif", size: 12 } } },
-            y: { grid: { display: false }, ticks: { font: { family: "'Chakra Petch', sans-serif", size: 12, weight: '500' } } }
-          }
+            // 2. หมวดปัจจัยเสี่ยง
+            if(icd.startsWith('Z57')) {
+                return "2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน";
+            }
+            // 3.1 ระบบกระดูก กล้ามเนื้อ (G56.0, M)
+            if(icd.startsWith('G56') || icd.startsWith('M')) {
+                return "3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท";
+            }
+            // 3.2 ระบบทางเดินหายใจ (J60-J68, J40-J45)
+            if(icd.startsWith('J6') || icd.startsWith('J4') || icd.startsWith('J3')) {
+                return "3.2 โรคระบบทางเดินหายใจจากการทำงาน";
+            }
+            // 3.3 กายภาพและผิวหนัง (H83.3, T75.2, T67, L23-L24)
+            if(icd.startsWith('H83') || icd.startsWith('T75') || icd.startsWith('T67') || icd.startsWith('L23') || icd.startsWith('L24')) {
+                return "3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง";
+            }
+            // 3.4 สารเคมีอุตสาหกรรม (T52, T56, T59, T60)
+            if(icd.startsWith('T5') || icd.startsWith('T60')) {
+                return "3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม";
+            }
+            // 4. สาเหตุภายนอก (Y96, Y97, Y93)
+            if(icd.startsWith('Y9')) {
+                return "4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ";
+            }
+            
+            return "อื่นๆ (ไม่ได้ระบุในหมวดหลัก)";
         }
-      });
 
-      // 2. Chart Category Proportions (Donut Chart)
-      const ctxCat = document.getElementById('chartCategories').getContext('2d');
-      chartInstances.categories = new Chart(ctxCat, {
-        type: 'doughnut',
-        data: {
-          labels: [],
-          datasets: [{
-            data: [],
-            backgroundColor: [],
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '66%',
-          plugins: {
-            legend: { position: 'bottom', labels: { font: { family: "'Chakra Petch', sans-serif", size: 11 }, boxWidth: 12, padding: 12 } }
-          }
-        }
-      });
-    }
-
-    function applyFilters() {
-      const groupFilter = document.getElementById('filterGroup').value;
-      const typeFilter = document.getElementById('filterType').value;
-
-      let filtered = [...masterData];
-
-      if (groupFilter !== 'ALL') {
-        filtered = filtered.filter(item => item.group === groupFilter);
-      }
-
-      // Compute counts based on patient type
-      const processedData = filtered.map(item => {
-        let value = item.count;
-        if (typeFilter === 'NEW') value = item.newCases;
-        if (typeFilter === 'OLD') value = item.oldCases;
-        return { ...item, displayCount: value };
-      }).filter(item => item.displayCount > 0); // Remove items that became 0 after filtering
-
-      // Re-sort based on filtered display count
-      processedData.sort((a, b) => b.displayCount - a.displayCount);
-
-      updateKPIs(processedData);
-      updateCharts(processedData, groupFilter);
-      renderTable(processedData);
-    }
-
-    function updateKPIs(dataList) {
-      const total = dataList.reduce((acc, cur) => acc + cur.displayCount, 0);
-      const newTotal = dataList.reduce((acc, cur) => acc + cur.newCases, 0);
-      const oldTotal = dataList.reduce((acc, cur) => acc + cur.oldCases, 0);
-
-      document.getElementById('kpiTotalVisits').textContent = total.toLocaleString();
-      document.getElementById('totalCasesLabel').textContent = `รวมข้อมูลแสดงผล: ${total.toLocaleString()} รายการ`;
-      
-      document.getElementById('kpiNewCases').textContent = newTotal.toLocaleString();
-      document.getElementById('kpiOldCases').textContent = oldTotal.toLocaleString();
-
-      if(dataList.length > 0) {
-        document.getElementById('kpiTopDisease').textContent = dataList[0].icd;
-        document.getElementById('kpiTopDisease').title = dataList[0].nameTh;
-      } else {
-         document.getElementById('kpiTopDisease').textContent = "-";
-      }
-    }
-
-    function updateCharts(dataList, currentGroupFilter) {
-      // 1. Update Horizontal Bar (Take Top 15 max to avoid clutter)
-      const topN = dataList.slice(0, 15);
-      chartInstances.topDiseases.data.labels = topN.map(d => `${d.icd}: ${d.nameTh.substring(0,30)}...`);
-      chartInstances.topDiseases.data.datasets[0].data = topN.map(d => d.displayCount);
-      chartInstances.topDiseases.data.datasets[0].backgroundColor = topN.map(d => d.color);
-      chartInstances.topDiseases.update();
-
-      // 2. Update Donut Chart (Group proportions)
-      if(currentGroupFilter === 'ALL') {
-        const groupCounts = { 'Z_EVALUATION': 0, 'Z_EXPOSURE': 0, 'MUSCULO': 0, 'RESPIRATORY': 0, 'ENVIRONMENTAL_DERMA': 0, 'TOXICOLOGY': 0, 'Y_EXTERNAL': 0, 'OTHER': 0 };
-        dataList.forEach(d => {
-           if(groupCounts[d.group] !== undefined) groupCounts[d.group] += d.displayCount;
-        });
-        
-        const cLabels = [];
-        const cData = [];
-        const cColors = [];
-
-        Object.keys(groupCounts).forEach(key => {
-            if(groupCounts[key] > 0) {
-                cLabels.push(groupMap[key].th);
-                cData.push(groupCounts[key]);
-                cColors.push(groupMap[key].color);
+        // ดึงข้อมูลผ่าน PapaParse
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                rawData = results.data;
+                document.getElementById('loading').style.display = 'none';
+                applyFilters(); // โหลดกราฟครั้งแรก
+            },
+            error: function(err) {
+                alert("ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าไฟล์ Google Sheet เปิดแชร์เป็น 'ทุกคนที่มีลิงก์' (Anyone with the link) แล้ว");
+                document.getElementById('loading').style.display = 'none';
             }
         });
 
-        chartInstances.categories.data.labels = cLabels;
-        chartInstances.categories.data.datasets[0].data = cData;
-        chartInstances.categories.data.datasets[0].backgroundColor = cColors;
-        chartInstances.categories.update();
-      } else {
-        // If filtered by group, just show one donut ring or clear it
-        chartInstances.categories.data.labels = [groupMap[currentGroupFilter].th];
-        chartInstances.categories.data.datasets[0].data = [dataList.reduce((acc, cur) => acc + cur.displayCount, 0)];
-        chartInstances.categories.data.datasets[0].backgroundColor = [groupMap[currentGroupFilter].color];
-        chartInstances.categories.update();
-      }
-    }
+        // ฟังก์ชันจัดการตัวกรอง
+        function applyFilters() {
+            const groupVal = document.getElementById('groupFilter').value;
+            const patientVal = document.getElementById('patientFilter').value;
 
-    function renderTable(dataList) {
-      const tbody = document.getElementById('diseaseTableBody');
-      
-      if(dataList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
-        return;
-      }
+            const filteredData = rawData.filter(row => {
+                const icd = row['icd10'] || '';
+                const pType = row['new_patient_in_year'] || row['new_patient'] || '';
+                
+                const groupMatch = (groupVal === 'all') || (determineGroup(icd) === groupVal);
+                const patientMatch = (patientVal === 'all') || (pType.includes(patientVal));
 
-      tbody.innerHTML = dataList.map((item, index) => {
-        const gInfo = groupMap[item.group] || groupMap['OTHER'];
-        
-        return `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-3 px-4 font-bold text-slate-500">#${index + 1}</td>
-            <td class="py-3 px-4 font-mono font-bold text-teal-700">${item.icd}</td>
-            <td class="py-3 px-4">
-              <div class="font-medium text-slate-800">${item.nameTh}</div>
-            </td>
-            <td class="py-3 px-4">
-              <span class="inline-block text-xs px-2.5 py-0.5 rounded-full font-medium ${gInfo.bgClass} border">${gInfo.th}</span>
-            </td>
-            <td class="py-3 px-4 text-right font-bold text-slate-800">${item.displayCount.toLocaleString()}</td>
-            <td class="py-3 px-4 text-right text-blue-600">${item.newCases.toLocaleString()}</td>
-            <td class="py-3 px-4 text-right text-indigo-600">${item.oldCases.toLocaleString()}</td>
-          </tr>
-        `;
-      }).join('');
-    }
+                return groupMatch && patientMatch;
+            });
 
-    function resetFilters() {
-      document.getElementById('filterGroup').value = 'ALL';
-      document.getElementById('filterType').value = 'ALL';
-      applyFilters();
-    }
+            updateDashboards(filteredData);
+        }
 
-    // Download Helpers
-    function downloadSingleChart(chartKey, filename) {
-      try {
-        let chart = chartInstances[chartKey === 'chartTopDiseases' ? 'topDiseases' : 'categories'];
-        if (!chart) return;
-        const base64Image = chart.toBase64Image('image/png', 1.0);
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = base64Image;
-        link.click();
-        showToast('บันทึกรูปกราฟเรียบร้อยแล้ว', 'ph-check-circle', 'text-teal-400');
-      } catch (err) {
-        showToast('เกิดข้อผิดพลาดในการบันทึกรูปกราฟ', 'ph-warning-circle', 'text-red-400');
-      }
-    }
+        // ประมวลผลและสร้างกราฟ
+        function updateDashboards(data) {
+            // Update KPIs
+            document.getElementById('kpi-total').innerText = data.length.toLocaleString();
+            let newCases = data.filter(d => {
+                let p = d['new_patient_in_year'] || d['new_patient'] || '';
+                return p.includes('ใหม่');
+            }).length;
+            document.getElementById('kpi-new').innerText = newCases.toLocaleString();
 
-    function exportFullDashboard() {
-      const btn = document.getElementById('btnExportAll');
-      const originalHtml = btn.innerHTML;
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-base"></i> <span>กำลังประมวลผล...</span>`;
-      btn.disabled = true;
+            // นับข้อมูล
+            let icdCounts = {};
+            let groupCounts = {};
+            let occCounts = {};
+            let areaCounts = {};
 
-      showToast('กำลังแปลงหน้าจอเป็นรูปภาพ...', 'ph-spinner-gap', 'text-blue-400', true);
+            data.forEach(row => {
+                // ข้อมูลโรค
+                const icd = (row['icd10'] || 'ไม่ระบุ').trim();
+                const desc = (row['discrip'] || row['desc'] || '').trim();
+                const label = icd !== 'ไม่ระบุ' ? `${icd} ${desc}` : 'ไม่ระบุ';
+                
+                icdCounts[label] = (icdCounts[label] || 0) + 1;
 
-      html2canvas(document.getElementById('dashboardCaptureArea'), { scale: 2, backgroundColor: '#f8fafc' }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `Dashboard_${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+                // หมวดหมู่
+                const group = determineGroup(icd);
+                groupCounts[group] = (groupCounts[group] || 0) + 1;
 
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
-        showToast('ดาวน์โหลดภาพแดชบอร์ดสำเร็จ', 'ph-check-circle', 'text-teal-400');
-      }).catch(err => {
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
-        showToast('ไม่สามารถบันทึกภาพแดชบอร์ดได้', 'ph-warning-circle', 'text-red-400');
-      });
-    }
+                // อาชีพ
+                const occ = (row['อาชีพ'] || 'ไม่ระบุ').trim();
+                occCounts[occ] = (occCounts[occ] || 0) + 1;
 
-    function showToast(msg, iconClass, colorClass, spin = false) {
-      const toast = document.getElementById('toastNotification');
-      const msgElem = document.getElementById('toastMessage');
-      const iconElem = document.getElementById('toastIcon');
-      
-      msgElem.textContent = msg;
-      iconElem.className = `ph-bold ${iconClass} ${colorClass} text-xl ${spin ? 'animate-spin' : ''}`;
+                // ตำบล
+                const area = (row['ตำบล'] || 'ไม่ระบุ').trim();
+                areaCounts[area] = (areaCounts[area] || 0) + 1;
+            });
 
-      toast.classList.remove('translate-y-24', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
+            // จัดเรียง
+            const sortData = (obj, topN) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, topN);
+            const topDiseases = sortData(icdCounts, 10);
+            const topOccs = sortData(occCounts, 10);
+            const topAreas = sortData(areaCounts, 10);
 
-      if(!spin) {
-          setTimeout(() => {
-            toast.classList.add('translate-y-24', 'opacity-0');
-            toast.classList.remove('translate-y-0', 'opacity-100');
-          }, 3000);
-      }
-    }
+            // Update KPI Top Disease
+            if(topDiseases.length > 0) {
+                let parts = topDiseases[0][0].split(' ');
+                document.getElementById('kpi-top-icd').innerText = parts[0];
+                document.getElementById('kpi-top-disease').innerText = parts.slice(1).join(' ') || 'N/A';
+            } else {
+                document.getElementById('kpi-top-icd').innerText = '-';
+                document.getElementById('kpi-top-disease').innerText = 'ไม่พบข้อมูล';
+            }
 
-    // INITIALIZATION
-    window.addEventListener('DOMContentLoaded', () => {
-      fetchDataFromGoogleSheets();
-    });
-  </script>
+            // --- วาดกราฟ ---
+            if(chartDisease) chartDisease.destroy();
+            chartDisease = new Chart(document.getElementById('diseaseChart'), {
+                type: 'bar',
+                data: {
+                    labels: topDiseases.map(d => d[0]),
+                    datasets: [{
+                        label: 'จำนวน (ครั้ง)',
+                        data: topDiseases.map(d => d[1]),
+                        backgroundColor: '#0d6efd'
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            if(chartGroup) chartGroup.destroy();
+            chartGroup = new Chart(document.getElementById('groupChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(groupCounts),
+                    datasets: [{
+                        data: Object.values(groupCounts),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', '#e7e9ed']
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { font: { family: "'Chakra Petch', sans-serif" } } } 
+                    } 
+                }
+            });
+
+            if(chartOcc) chartOcc.destroy();
+            chartOcc = new Chart(document.getElementById('occChart'), {
+                type: 'bar',
+                data: {
+                    labels: topOccs.map(d => d[0]),
+                    datasets: [{
+                        label: 'จำนวน (ครั้ง)',
+                        data: topOccs.map(d => d[1]),
+                        backgroundColor: '#20c997'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            if(chartArea) chartArea.destroy();
+            chartArea = new Chart(document.getElementById('areaChart'), {
+                type: 'bar',
+                data: {
+                    labels: topAreas.map(d => d[0]),
+                    datasets: [{
+                        label: 'จำนวน (ครั้ง)',
+                        data: topAreas.map(d => d[1]),
+                        backgroundColor: '#fd7e14'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // ฟังก์ชันเซฟรูปภาพ
+        function saveChart(cardId) {
+            const element = document.getElementById(cardId);
+            const btn = element.querySelector('.btn-save');
+            btn.style.display = 'none'; // ซ่อนปุ่มก่อนเซฟ
+            
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `chart_${Date.now()}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                btn.style.display = 'block'; // คืนปุ่มกลับมา
+            });
+        }
+
+        function saveDashboard() {
+            const element = document.getElementById('dashboard-content');
+            const btns = document.querySelectorAll('.btn-save');
+            btns.forEach(b => b.style.display = 'none');
+            
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `dashboard_${Date.now()}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                btns.forEach(b => b.style.display = 'block');
+            });
+        }
+    </script>
 </body>
 </html>
