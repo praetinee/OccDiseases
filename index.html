@@ -3,205 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>รายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</title>
+    <title>รายงานเฝ้าระวังโรคจากการประกอบอาชีพ - รพ.สันทราย</title>
     
-    <!-- นำเข้าฟอนต์ Chakra Petch จาก Google Fonts -->
+    <!-- ฟอนต์ Chakra Petch -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse สำหรับดึงข้อมูลจาก Google Sheets -->
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- html2canvas สำหรับเซฟรูป -->
+    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         body {
             font-family: 'Chakra Petch', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: #f0f2f5;
+            color: #2c3e50;
         }
         .dashboard-header {
-            background: #0d6efd;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .card {
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            background: #ffffff;
         }
         .card-header {
-            background: white;
-            font-weight: 600;
-            border-bottom: 1px solid #eee;
+            background: #ffffff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1e3c72;
+            border-bottom: 1px solid #edf2f9;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-radius: 12px 12px 0 0 !important;
         }
         .kpi-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
+            background: #ffffff;
+            padding: 25px 20px;
+            border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             text-align: center;
-            margin-bottom: 20px;
+            height: 100%;
+            border-bottom: 4px solid #2a5298;
+        }
+        .kpi-title {
+            color: #7f8c8d;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
         .kpi-value {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #0d6efd;
+            color: #2c3e50;
+        }
+        .kpi-sub {
+            font-size: 0.9rem;
+            color: #95a5a6;
         }
         .btn-save {
-            font-size: 0.8rem;
-            padding: 2px 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
         }
         #loading {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 9999;
+        }
+        canvas {
+            max-height: 400px;
         }
     </style>
 </head>
 <body>
 
-    <!-- หน้าจอโหลดข้อมูล -->
+    <!-- หน้าจอโหลด -->
     <div id="loading">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <h4 class="mt-3 font-chakra">กำลังดึงข้อมูลจาก Google Sheets...</h4>
-        <p class="text-muted">โปรดตรวจสอบให้แน่ใจว่าเปิดแชร์ลิงก์ Sheet เป็น "ทุกคนที่มีลิงก์"</p>
+        <h4 class="mt-3 fw-bold">กำลังประมวลผลตารางสรุป...</h4>
     </div>
 
     <div class="container py-4" id="dashboard-content">
         <!-- Header -->
-        <div class="dashboard-header">
+        <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h2 class="mb-0 fw-bold">รายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</h2>
-                <p class="mb-0 text-white-50">รพ.สันทราย จ.เชียงใหม่</p>
+                <h2 class="mb-1 fw-bold">รายงานเฝ้าระวังโรคจากการประกอบอาชีพและสิ่งแวดล้อม</h2>
+                <h5 class="mb-0 text-white-50">แผนกอาชีวเวชกรรม โรงพยาบาลสันทราย จังหวัดเชียงใหม่</h5>
             </div>
-            <button class="btn btn-light fw-bold" onclick="saveDashboard()">💾 บันทึกทั้งแดชบอร์ด (PNG)</button>
-        </div>
-
-        <!-- Filters -->
-        <div class="card p-3 mb-4">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">กรองตามหมวดหมู่โรค (ตามคู่มือ ICD-10 อาชีวเวชกรรม)</label>
-                    <select id="groupFilter" class="form-select" onchange="applyFilters()">
-                        <option value="all">แสดงทุกหมวดหมู่</option>
-                        <option value="1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม">1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม</option>
-                        <option value="2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน">2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน</option>
-                        <option value="3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท">3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท</option>
-                        <option value="3.2 โรคระบบทางเดินหายใจจากการทำงาน">3.2 โรคระบบทางเดินหายใจจากการทำงาน</option>
-                        <option value="3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง">3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง</option>
-                        <option value="3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม">3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม</option>
-                        <option value="4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ">4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ</option>
-                        <option value="อื่นๆ (ไม่ได้ระบุในหมวดหลัก)">อื่นๆ (ไม่ได้ระบุในหมวดหลัก)</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">กรองประเภทผู้ป่วย</label>
-                    <select id="patientFilter" class="form-select" onchange="applyFilters()">
-                        <option value="all">ทั้งหมด</option>
-                        <option value="ผู้ป่วยใหม่">เฉพาะผู้ป่วยใหม่</option>
-                        <option value="ผู้ป่วยเก่า">เฉพาะผู้ป่วยเก่า</option>
-                    </select>
-                </div>
-            </div>
+            <button class="btn btn-light fw-bold px-4 py-2" style="border-radius: 8px;" onclick="saveDashboard()">
+                📷 บันทึกรายงาน (PNG)
+            </button>
         </div>
 
         <!-- KPI Cards -->
-        <div class="row">
+        <div class="row g-4 mb-4">
             <div class="col-md-4">
-                <div class="kpi-box">
-                    <h5 class="text-muted">จำนวนการเข้ารับบริการทั้งหมด</h5>
-                    <div class="kpi-value" id="kpi-total">0</div>
-                    <div>ครั้ง (Visits)</div>
+                <div class="kpi-box" style="border-color: #0d6efd;">
+                    <div class="kpi-title">ผู้ป่วยรวมล่าสุด (ตค 68-กย 69)</div>
+                    <div class="kpi-value text-primary" id="kpi-year3">0</div>
+                    <div class="kpi-sub" id="kpi-growth">เทียบกับปีที่ผ่านมา</div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="kpi-box">
-                    <h5 class="text-muted">ผู้ป่วยใหม่</h5>
-                    <div class="kpi-value text-success" id="kpi-new">0</div>
-                    <div>ราย</div>
+                <div class="kpi-box" style="border-color: #dc3545;">
+                    <div class="kpi-title">โรคอันดับ 1 (ปีล่าสุด)</div>
+                    <div class="kpi-value text-danger" style="font-size: 1.8rem; line-height: 1.2;" id="kpi-top-name">-</div>
+                    <div class="kpi-sub mt-2" id="kpi-top-icd">รหัส ICD-10</div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="kpi-box">
-                    <h5 class="text-muted">โรคอันดับ 1 ที่พบ</h5>
-                    <div class="kpi-value text-danger" style="font-size: 1.8rem;" id="kpi-top-disease">-</div>
-                    <div id="kpi-top-icd">-</div>
+                <div class="kpi-box" style="border-color: #198754;">
+                    <div class="kpi-title">จำนวนกลุ่มโรคที่เฝ้าระวัง</div>
+                    <div class="kpi-value text-success" id="kpi-disease-count">0</div>
+                    <div class="kpi-sub">รหัสโรคทางอาชีวเวชกรรม</div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts -->
-        <div class="row">
-            <!-- Top 10 Diseases -->
-            <div class="col-md-8">
-                <div class="card h-100" id="card-disease">
+        <!-- Charts Row 1 -->
+        <div class="row g-4">
+            <!-- Top 10 Horizontal Bar -->
+            <div class="col-lg-7">
+                <div class="card h-100" id="card-top10">
                     <div class="card-header">
-                        <span>10 อันดับโรคทางอาชีวเวชกรรมที่พบสูงสุด</span>
-                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-disease')">เซฟรูป</button>
+                        <span>📊 10 อันดับโรคที่พบมากที่สุด (ตค 68-กย 69)</span>
+                        <button class="btn btn-outline-primary btn-save" onclick="saveChart('card-top10')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
-                        <canvas id="diseaseChart"></canvas>
+                        <canvas id="top10Chart"></canvas>
                     </div>
                 </div>
             </div>
             
-            <!-- Disease Groups -->
-            <div class="col-md-4">
+            <!-- Disease Groups Donut -->
+            <div class="col-lg-5">
                 <div class="card h-100" id="card-group">
                     <div class="card-header">
-                        <span>สัดส่วนกลุ่มโรคหลัก</span>
-                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-group')">เซฟรูป</button>
+                        <span>🎯 สัดส่วนกลุ่มโรคตามมาตรฐาน ICD-10</span>
+                        <button class="btn btn-outline-primary btn-save" onclick="saveChart('card-group')">เซฟรูป</button>
                     </div>
-                    <div class="card-body d-flex align-items-center">
+                    <div class="card-body d-flex align-items-center justify-content-center">
                         <canvas id="groupChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row mt-4">
-            <!-- Occupations -->
-            <div class="col-md-6">
-                <div class="card h-100" id="card-occ">
+        <!-- Charts Row 2 -->
+        <div class="row g-4 mt-1">
+            <!-- 3 Years Trend -->
+            <div class="col-12">
+                <div class="card" id="card-trend">
                     <div class="card-header">
-                        <span>อาชีพที่พบการเจ็บป่วยสูงสุด</span>
-                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-occ')">เซฟรูป</button>
+                        <span>📈 แนวโน้มเปรียบเทียบ 3 ปี (Top 5 โรคสูงสุด)</span>
+                        <button class="btn btn-outline-primary btn-save" onclick="saveChart('card-trend')">เซฟรูป</button>
                     </div>
                     <div class="card-body">
-                        <canvas id="occChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Areas -->
-            <div class="col-md-6">
-                <div class="card h-100" id="card-area">
-                    <div class="card-header">
-                        <span>พื้นที่ (ตำบล) ที่พบสูงสุด</span>
-                        <button class="btn btn-sm btn-outline-secondary btn-save" onclick="saveChart('card-area')">เซฟรูป</button>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="areaChart"></canvas>
+                        <canvas id="trendChart" style="max-height: 350px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -209,229 +185,212 @@
     </div>
 
     <script>
-        // ตั้งค่า Font ของ Chart.js ให้เป็น Chakra Petch ทั้งหมด
+        // ตั้งค่า Font ของ Chart.js ให้เป็น Chakra Petch
         Chart.defaults.font.family = "'Chakra Petch', sans-serif";
-        Chart.defaults.font.size = 14;
+        Chart.defaults.color = '#34495e';
 
+        // URL ดึงข้อมูล CSV (เชื่อมชีต "สรุป")
         const SHEET_ID = '1xswOes7vFaiKMf2Pb5pcBeFA-Zb0N_ot';
         const GID = '486947397';
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
 
-        let rawData = [];
-        let chartDisease, chartGroup, chartOcc, chartArea;
+        let chartTop10, chartGroup, chartTrend;
 
-        // จัดกลุ่มโรคตาม PDF ที่ผู้ใช้แนบมาอย่างเคร่งครัด
+        // จัดกลุ่มตาม PDF ICD-10 Dual Coding
         function determineGroup(icd) {
             if(!icd) return "อื่นๆ (ไม่ได้ระบุในหมวดหลัก)";
             icd = icd.toUpperCase().trim();
             
-            // 1. หมวดการตรวจสุขภาพ
-            if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) {
-                return "1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม";
-            }
-            // 2. หมวดปัจจัยเสี่ยง
-            if(icd.startsWith('Z57')) {
-                return "2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน";
-            }
-            // 3.1 ระบบกระดูก กล้ามเนื้อ (G56.0, M)
-            if(icd.startsWith('G56') || icd.startsWith('M')) {
-                return "3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท";
-            }
-            // 3.2 ระบบทางเดินหายใจ (J60-J68, J40-J45)
-            if(icd.startsWith('J6') || icd.startsWith('J4') || icd.startsWith('J3')) {
-                return "3.2 โรคระบบทางเดินหายใจจากการทำงาน";
-            }
-            // 3.3 กายภาพและผิวหนัง (H83.3, T75.2, T67, L23-L24)
-            if(icd.startsWith('H83') || icd.startsWith('T75') || icd.startsWith('T67') || icd.startsWith('L23') || icd.startsWith('L24')) {
-                return "3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง";
-            }
-            // 3.4 สารเคมีอุตสาหกรรม (T52, T56, T59, T60)
-            if(icd.startsWith('T5') || icd.startsWith('T60')) {
-                return "3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม";
-            }
-            // 4. สาเหตุภายนอก (Y96, Y97, Y93)
-            if(icd.startsWith('Y9')) {
-                return "4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ";
-            }
+            if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) return "1. หมวดการตรวจสุขภาพฯ";
+            if(icd.startsWith('Z57')) return "2. หมวดการสัมผัสปัจจัยเสี่ยงฯ";
+            if(icd.startsWith('G56') || icd.startsWith('M')) return "3.1 โรคระบบกระดูกและกล้ามเนื้อ";
+            if(icd.startsWith('J6') || icd.startsWith('J4') || icd.startsWith('J3')) return "3.2 โรคระบบทางเดินหายใจ";
+            if(icd.startsWith('H83') || icd.startsWith('T75') || icd.startsWith('T67') || icd.startsWith('L23') || icd.startsWith('L24')) return "3.3 โรคกายภาพและผิวหนัง";
+            if(icd.startsWith('T5') || icd.startsWith('T60')) return "3.4 การได้รับสารเคมีและสารพิษ";
+            if(icd.startsWith('Y9')) return "4. รหัสสาเหตุภายนอก (Y-codes)";
             
-            return "อื่นๆ (ไม่ได้ระบุในหมวดหลัก)";
+            return "กลุ่มโรคอื่นๆ";
         }
 
-        // ดึงข้อมูลผ่าน PapaParse
+        // แปลงค่าสตริงตัวเลขที่มีลูกน้ำให้เป็น Number
+        function parseNum(val) {
+            if(!val) return 0;
+            return parseInt(val.toString().replace(/,/g, ''), 10) || 0;
+        }
+
         Papa.parse(CSV_URL, {
             download: true,
-            header: true,
+            header: false, // ใช้ false เพื่ออ่านตาม Index ป้องกันปัญหาชื่อคอลัมน์ยาว/ซับซ้อน
             skipEmptyLines: true,
             complete: function(results) {
-                rawData = results.data;
+                // ข้ามแถวที่ 0 (Header) และกรองเอาเฉพาะแถวที่มีข้อมูลรหัสโรค
+                const rows = results.data.slice(1).filter(r => r[0] && r[1]);
+                
+                let processedData = rows.map(r => ({
+                    name: r[0].trim(),
+                    icd: r[1].trim(),
+                    year1: parseNum(r[2]),
+                    year2: parseNum(r[3]),
+                    year3: parseNum(r[4])
+                }));
+
+                // จัดเรียงตามยอดปีล่าสุด (ปี 68-69)
+                processedData.sort((a, b) => b.year3 - a.year3);
+                
+                buildDashboard(processedData);
                 document.getElementById('loading').style.display = 'none';
-                applyFilters(); // โหลดกราฟครั้งแรก
             },
             error: function(err) {
-                alert("ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าไฟล์ Google Sheet เปิดแชร์เป็น 'ทุกคนที่มีลิงก์' (Anyone with the link) แล้ว");
+                alert("ไม่สามารถเข้าถึง Google Sheets ได้ กรุณาเปิดสิทธิ์แชร์เป็น 'ทุกคนที่มีลิงก์'");
                 document.getElementById('loading').style.display = 'none';
             }
         });
 
-        // ฟังก์ชันจัดการตัวกรอง
-        function applyFilters() {
-            const groupVal = document.getElementById('groupFilter').value;
-            const patientVal = document.getElementById('patientFilter').value;
+        function buildDashboard(data) {
+            if(data.length === 0) return;
 
-            const filteredData = rawData.filter(row => {
-                const icd = row['icd10'] || '';
-                const pType = row['new_patient_in_year'] || row['new_patient'] || '';
-                
-                const groupMatch = (groupVal === 'all') || (determineGroup(icd) === groupVal);
-                const patientMatch = (patientVal === 'all') || (pType.includes(patientVal));
-
-                return groupMatch && patientMatch;
-            });
-
-            updateDashboards(filteredData);
-        }
-
-        // ประมวลผลและสร้างกราฟ
-        function updateDashboards(data) {
-            // Update KPIs
-            document.getElementById('kpi-total').innerText = data.length.toLocaleString();
-            let newCases = data.filter(d => {
-                let p = d['new_patient_in_year'] || d['new_patient'] || '';
-                return p.includes('ใหม่');
-            }).length;
-            document.getElementById('kpi-new').innerText = newCases.toLocaleString();
-
-            // นับข้อมูล
-            let icdCounts = {};
-            let groupCounts = {};
-            let occCounts = {};
-            let areaCounts = {};
-
-            data.forEach(row => {
-                // ข้อมูลโรค
-                const icd = (row['icd10'] || 'ไม่ระบุ').trim();
-                const desc = (row['discrip'] || row['desc'] || '').trim();
-                const label = icd !== 'ไม่ระบุ' ? `${icd} ${desc}` : 'ไม่ระบุ';
-                
-                icdCounts[label] = (icdCounts[label] || 0) + 1;
-
-                // หมวดหมู่
-                const group = determineGroup(icd);
-                groupCounts[group] = (groupCounts[group] || 0) + 1;
-
-                // อาชีพ
-                const occ = (row['อาชีพ'] || 'ไม่ระบุ').trim();
-                occCounts[occ] = (occCounts[occ] || 0) + 1;
-
-                // ตำบล
-                const area = (row['ตำบล'] || 'ไม่ระบุ').trim();
-                areaCounts[area] = (areaCounts[area] || 0) + 1;
-            });
-
-            // จัดเรียง
-            const sortData = (obj, topN) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, topN);
-            const topDiseases = sortData(icdCounts, 10);
-            const topOccs = sortData(occCounts, 10);
-            const topAreas = sortData(areaCounts, 10);
-
-            // Update KPI Top Disease
-            if(topDiseases.length > 0) {
-                let parts = topDiseases[0][0].split(' ');
-                document.getElementById('kpi-top-icd').innerText = parts[0];
-                document.getElementById('kpi-top-disease').innerText = parts.slice(1).join(' ') || 'N/A';
+            // --- 1. จัดการตัวเลข KPI ---
+            let totalYear2 = data.reduce((sum, d) => sum + d.year2, 0);
+            let totalYear3 = data.reduce((sum, d) => sum + d.year3, 0);
+            
+            document.getElementById('kpi-year3').innerText = totalYear3.toLocaleString();
+            
+            let growth = totalYear3 - totalYear2;
+            let growthEl = document.getElementById('kpi-growth');
+            if (growth > 0) {
+                growthEl.innerHTML = `<span class="text-danger">▲ เพิ่มขึ้น ${growth.toLocaleString()} ราย</span> จากปีก่อน`;
             } else {
-                document.getElementById('kpi-top-icd').innerText = '-';
-                document.getElementById('kpi-top-disease').innerText = 'ไม่พบข้อมูล';
+                growthEl.innerHTML = `<span class="text-success">▼ ลดลง ${Math.abs(growth).toLocaleString()} ราย</span> จากปีก่อน`;
             }
 
-            // --- วาดกราฟ ---
-            if(chartDisease) chartDisease.destroy();
-            chartDisease = new Chart(document.getElementById('diseaseChart'), {
+            document.getElementById('kpi-top-name').innerText = data[0].name;
+            document.getElementById('kpi-top-icd').innerText = `ICD-10: ${data[0].icd} (${data[0].year3.toLocaleString()} ราย)`;
+            document.getElementById('kpi-disease-count').innerText = data.length.toLocaleString();
+
+            // --- 2. กราฟ Top 10 แนวนอน (ใช้ข้อมูลปีล่าสุด) ---
+            const top10 = data.slice(0, 10);
+            chartTop10 = new Chart(document.getElementById('top10Chart'), {
                 type: 'bar',
                 data: {
-                    labels: topDiseases.map(d => d[0]),
+                    labels: top10.map(d => `${d.icd} ${d.name}`),
                     datasets: [{
-                        label: 'จำนวน (ครั้ง)',
-                        data: topDiseases.map(d => d[1]),
-                        backgroundColor: '#0d6efd'
+                        label: 'จำนวน (ราย)',
+                        data: top10.map(d => d.year3),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
                     }]
                 },
-                options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
-            });
-
-            if(chartGroup) chartGroup.destroy();
-            chartGroup = new Chart(document.getElementById('groupChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(groupCounts),
-                    datasets: [{
-                        data: Object.values(groupCounts),
-                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', '#e7e9ed']
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    plugins: { 
-                        legend: { position: 'bottom', labels: { font: { family: "'Chakra Petch', sans-serif" } } } 
-                    } 
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true } }
                 }
             });
 
-            if(chartOcc) chartOcc.destroy();
-            chartOcc = new Chart(document.getElementById('occChart'), {
-                type: 'bar',
+            // --- 3. กราฟ Donut กลุ่มโรค (จัดกลุ่มตาม PDF) ---
+            let groupSums = {};
+            data.forEach(d => {
+                let group = determineGroup(d.icd);
+                // ใช้ยอดรวม 3 ปี หรือยอดล่าสุดก็ได้ (ในที่นี้ใช้ยอดล่าสุดเพื่อให้สอดคล้องกับ KPI)
+                groupSums[group] = (groupSums[group] || 0) + d.year3;
+            });
+            
+            chartGroup = new Chart(document.getElementById('groupChart'), {
+                type: 'doughnut',
                 data: {
-                    labels: topOccs.map(d => d[0]),
+                    labels: Object.keys(groupSums),
                     datasets: [{
-                        label: 'จำนวน (ครั้ง)',
-                        data: topOccs.map(d => d[1]),
-                        backgroundColor: '#20c997'
+                        data: Object.values(groupSums),
+                        backgroundColor: [
+                            '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', 
+                            '#9966ff', '#ff9f40', '#e84393', '#00b894'
+                        ],
+                        borderWidth: 2
                     }]
                 },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 20 } }
+                    },
+                    cutout: '65%'
+                }
             });
 
-            if(chartArea) chartArea.destroy();
-            chartArea = new Chart(document.getElementById('areaChart'), {
+            // --- 4. กราฟ Trend 3 ปี (Top 5 โรค) ---
+            const top5 = data.slice(0, 5);
+            chartTrend = new Chart(document.getElementById('trendChart'), {
                 type: 'bar',
                 data: {
-                    labels: topAreas.map(d => d[0]),
-                    datasets: [{
-                        label: 'จำนวน (ครั้ง)',
-                        data: topAreas.map(d => d[1]),
-                        backgroundColor: '#fd7e14'
-                    }]
+                    labels: top5.map(d => `${d.icd} ${d.name}`),
+                    datasets: [
+                        {
+                            label: 'ตค 66-กย 67',
+                            data: top5.map(d => d.year1),
+                            backgroundColor: '#95a5a6'
+                        },
+                        {
+                            label: 'ตค 67-กย 68',
+                            data: top5.map(d => d.year2),
+                            backgroundColor: '#f1c40f'
+                        },
+                        {
+                            label: 'ตค 68-กย 69',
+                            data: top5.map(d => d.year3),
+                            backgroundColor: '#e74c3c'
+                        }
+                    ]
                 },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
             });
         }
 
-        // ฟังก์ชันเซฟรูปภาพ
+        // ฟังก์ชันเซฟรูปเฉพาะการ์ด
         function saveChart(cardId) {
             const element = document.getElementById(cardId);
             const btn = element.querySelector('.btn-save');
-            btn.style.display = 'none'; // ซ่อนปุ่มก่อนเซฟ
+            btn.style.display = 'none'; // ซ่อนปุ่ม
             
-            html2canvas(element, { scale: 2 }).then(canvas => {
+            html2canvas(element, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `chart_${Date.now()}.png`;
+                link.download = `chart_${cardId}_${Date.now()}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
-                btn.style.display = 'block'; // คืนปุ่มกลับมา
+                btn.style.display = 'block'; // คืนปุ่ม
             });
         }
 
+        // ฟังก์ชันเซฟรูปทั้งหน้า
         function saveDashboard() {
             const element = document.getElementById('dashboard-content');
             const btns = document.querySelectorAll('.btn-save');
-            btns.forEach(b => b.style.display = 'none');
+            const mainBtn = document.querySelector('.dashboard-header button');
             
-            html2canvas(element, { scale: 2 }).then(canvas => {
+            btns.forEach(b => b.style.display = 'none');
+            mainBtn.style.display = 'none';
+            
+            html2canvas(element, { scale: 2, backgroundColor: '#f0f2f5' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `dashboard_${Date.now()}.png`;
+                link.download = `occ_health_dashboard_${Date.now()}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
+                
                 btns.forEach(b => b.style.display = 'block');
+                mainBtn.style.display = 'block';
             });
         }
     </script>
