@@ -378,22 +378,22 @@
     // Colors for charting
     const colors = ['#14b8a6', '#0d9488', '#6366f1', '#2dd4bf', '#4f46e5', '#4338ca', '#3730a3', '#f59e0b', '#818cf8', '#312e81', '#0ea5e9', '#ec4899', '#8b5cf6'];
 
-    // Define colors and names for Groups based on icd10_occupational_health.pdf
+    // Define colors and names for Groups based on exact ICD-10 rules from provided PDF
     const groupMap = {
-        'Z_EVALUATION': { th: 'หมวดการตรวจสุขภาพและประเมิน', color: '#10b981', bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' }, // Z02.1, Z10.0, Z02.79, Z02.89, Z04.2
-        'Z_EXPOSURE': { th: 'หมวดการสัมผัสปัจจัยเสี่ยง', color: '#f59e0b', bgClass: 'bg-amber-50 text-amber-800 border-amber-200' }, // Z57.0-Z57.8
-        'MUSCULO': { th: 'ระบบกระดูก กล้ามเนื้อ', color: '#6366f1', bgClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' }, // G56.0, M54.5, M54.2, M70.0, M75.1, M77.1
-        'RESPIRATORY': { th: 'ระบบทางเดินหายใจ', color: '#0ea5e9', bgClass: 'bg-sky-50 text-sky-700 border-sky-200' }, // J60, J61, J62.8, J66.0, J68.0
-        'ENVIRONMENTAL_DERMA': { th: 'สภาวะแวดล้อมกายภาพและโรคผิวหนัง', color: '#ec4899', bgClass: 'bg-pink-50 text-pink-700 border-pink-200' }, // H83.3, T75.2, T67.0-T67.9, L23.0-L23.9, L24.0-L24.9
-        'TOXICOLOGY': { th: 'สารเคมีและสารพิษอุตสาหกรรม', color: '#8b5cf6', bgClass: 'bg-purple-50 text-purple-700 border-purple-200' }, // T52.0-T52.9, T56.0, T56.1, T59.0-T59.9, T60.0-T60.9
-        'Y_EXTERNAL': { th: 'หมวดสาเหตุภายนอก', color: '#ef4444', bgClass: 'bg-red-50 text-red-700 border-red-200' }, // Y96, Y97, Y93.H1
+        'Z_EVALUATION': { th: '1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม', color: '#10b981', bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' }, 
+        'Z_EXPOSURE': { th: '2. หมวดการสัมผัสปัจจัยเสี่ยงในสิ่งแวดล้อมการทำงาน', color: '#f59e0b', bgClass: 'bg-amber-50 text-amber-800 border-amber-200' }, 
+        'MUSCULO': { th: '3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท', color: '#6366f1', bgClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' }, 
+        'RESPIRATORY': { th: '3.2 โรคระบบทางเดินหายใจจากการทำงาน', color: '#0ea5e9', bgClass: 'bg-sky-50 text-sky-700 border-sky-200' }, 
+        'ENVIRONMENTAL_DERMA': { th: '3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง', color: '#ec4899', bgClass: 'bg-pink-50 text-pink-700 border-pink-200' }, 
+        'TOXICOLOGY': { th: '3.4 การได้รับสารเคมีและสารพิษอุตสาหกรรม', color: '#8b5cf6', bgClass: 'bg-purple-50 text-purple-700 border-purple-200' }, 
+        'Y_EXTERNAL': { th: '4. รหัสสาเหตุภายนอกที่ต้องกำกับร่วมเสมอ', color: '#ef4444', bgClass: 'bg-red-50 text-red-700 border-red-200' }, 
         'OTHER': { th: 'อื่นๆ', color: '#94a3b8', bgClass: 'bg-slate-100 text-slate-700 border-slate-200' }
     };
 
     // Helper to determine group based on exact ICD-10 rules from PDF
     function determineGroup(icd) {
         if(!icd) return 'OTHER';
-        icd = icd.toUpperCase().trim();
+        icd = icd.toString().toUpperCase().trim();
         
         // 1. หมวดการตรวจสุขภาพและประเมินสภาวะทางอาชีวเวชกรรม
         if(icd.startsWith('Z02') || icd.startsWith('Z10') || icd.startsWith('Z04')) return 'Z_EVALUATION';
@@ -403,7 +403,7 @@
         
         // 3. หมวดโรคและการเจ็บป่วยจากการทำงาน
         // 3.1 โรคระบบกระดูก กล้ามเนื้อ และเส้นประสาท
-        if(icd.startsWith('M') || icd === 'G56' || icd === 'G56.0') return 'MUSCULO'; 
+        if(icd.startsWith('M') || icd === 'G56' || icd.startsWith('G56')) return 'MUSCULO'; 
         // 3.2 โรคระบบทางเดินหายใจจากการทํางาน
         if(icd.startsWith('J')) return 'RESPIRATORY';
         // 3.3 โรคจากการได้รับสัมผัสสภาวะแวดล้อมทางกายภาพและโรคผิวหนัง
